@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, minimal-ui">
+  <link href="https://fonts.googleapis.com/css?family=Roboto:100,300,400,500,700,900" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/@mdi/font@5.x/css/materialdesignicons.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/vuetify@2.x/dist/vuetify.min.css" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"
+    integrity="sha384-ka7Sk0Gln4gmtz2MlQnikT1wXgYsOg+OMhuP+IlRH9sENBO0LRn5q+8nbTov4+1p"
+    crossorigin="anonymous"></script>
+
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11.0.19/dist/sweetalert2.min.css">
+  <style>
+    #app {
+      background-color: #CFD8DC;
+    }
+  </style>
+</head>
+
+<body>
+  <div id="app">
+    <v-app>
+      <v-main>
+        <!--<h2 class="text-center">CRUD usando APIREST</h2>-->
+        <!-- Botón CREAR -->
+        <v-flex class="text-center align-center">
+          <v-btn class="mx-2 mt-4" color="#00B0FF" @click="formNuevo()">
+            <v-icon dark>mdi-plus</v-icon>
+          </v-btn>
+        </v-flex>
+        <v-card class="mx-auto mt-5" color="transparent" max-width="1280" elevation="8">
+
+          <!-- Buscador -->
+          <v-form>
+            <v-container>
+              <v-row>
+                <v-col cols="12" md="10">
+                  <v-text-field v-model="search" label="Buscar" type="text" >
+                  </v-text-field>
+
+                </v-col>
+                <v-col cols="12" md="2">
+                  <v-btn class="mx-2 mt-4" color="#00B0FF" @click.prevent="buscar()">
+                    <v-icon dark>mdi-magnify</v-icon>
+                  </v-btn>
+
+              </v-row>
+            </v-container>
+          </v-form>
+
+          <!-- Tabla y formulario -->
+          <v-simple-table class="mt-5">
+            <template v-slot:default>
+              <thead>
+                <tr class="indigo darken-4">
+                  <th class="white--text">ID</th>
+                  <th class="white--text">NOMBRE</th>
+                  <th class="white--text">APELLIDOS</th>
+                  <th class="white--text">TELEFONO</th>
+                  <th class="white--text">CORREO</th>
+                  <th class="white--text">EDAD</th>
+                  <th class="white--text">DIRECCION</th>
+                  <th class="white--text">COMIDA ENTREGADA</th>
+                  <th class="white--text">OBSERVACION</th>
+                  <th class="white--text text-center">ACCIONES</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="residente in residentes" :key="residente.id">
+                  <td>{{ residente.id }}</td>
+                  <td>{{ residente.nombre }}</td>
+                  <td>{{ residente.apellido }}</td>
+                  <td>{{ residente.telefono }}</td>
+                  <td>{{ residente.correo}}</td>
+                  <td>{{ residente.edad}}</td>
+                  <td>{{ residente.direccion}}</td>
+                  <td>{{ residente.comida_entregada}}</td>
+                  <td>{{ residente.observaciones}}</td>
+                  <td>
+                    <v-btn fab dark color="#00BCD4" small
+                      @click="formEditar(residente.id, residente.nombre, residente.apellido, residente.telefono, residente.correo, residente.edad, residente.direccion, residente.comida_entregada, residente.observaciones)">
+                      <v-icon>
+                        mdi-pencil
+
+                      </v-icon>
+                    </v-btn>
+                    <v-btn fab dark color="#E53935" small @click="borrar(residente.id)">
+                      <v-icon>mdi-delete</v-icon>
+                    </v-btn>
+                  </td>
+                </tr>
+              </tbody>
+            </template>
+          </v-simple-table>
+
+          <nav aria-label="Page navigation example">
+            <ul class="pagination">
+
+              <li v-if="pagination.current_page > 1" class="page-item">
+                <a href="#" @click.prevent="changePage(pagination.current_page - 1)" class="page-link">
+                  <span>Atras</span>
+                </a>
+              </li>
+
+              <li v-for="page in pageNumber" v-bind:class="[page == isActived ? 'active': '']"><a href="#"
+                  @click="changePage(page)">@{{page}}</a></li>
+
+              <li v-if="pagination.current_page < pagination.last_page" class="page-item">
+                <a href="#" @click.prevent="changePage(pagination.current_page + 1)" class="page-link">
+                  <span>Siguiente</span>
+                </a>
+              </li>
+
+            </ul>
+          </nav>
+
+        </v-card>
+        <!-- Componente de Diálogo para CREAR y EDITAR -->
+        <v-dialog v-model="dialog" max-width="500">
+          <v-card>
+            <v-card-title class="blue darken-2 white--text">Residentes</v-card-title>
+            <v-card-text>
+              <v-form v-model="isValid">
+                <v-container>
+                  <v-row>
+                    <input v-model="residente.id" hidden></input>
+                    <v-col cols="12" md="6">
+                      <v-text-field v-model="residente.nombre" label="Nombre*" :rules="[rules.required]"></v-text-field>
+                    </v-col>
+
+                    <v-col cols="12" md="6">
+                      <v-text-field v-model="residente.apellido" label="Apellido*" :rules="[rules.required]">
+                      </v-text-field>
+                    </v-col>
+
+                    <v-col cols="12" md="4">
+                      <v-text-field v-model="residente.telefono" label="Telefono" type="tel" prefix="" required>
+                      </v-text-field>
+                    </v-col>
+
+                    <v-col cols="12" md="8">
+                      <v-text-field v-model="residente.correo" label="Mail" type="email*"
+                        :rules="[rules.email ,rules.required]"></v-text-field>
+                    </v-col>
+
+                    <v-col cols="12" md="3">
+                      <v-text-field v-model="residente.edad" label="Edad" type="number" required></v-text-field>
+                    </v-col>
+
+                    <v-col cols="12" md="9">
+                      <v-textarea v-model="residente.direccion" label="Direccion" type="text" outlined required>
+                      </v-textarea>
+                    </v-col>
+
+                    <v-col cols="12" md="12">
+                      <v-checkbox v-model="residente.comida_entregada" label="Comida entregada*" type="text" required>
+                      </v-checkbox>
+                    </v-col>
+
+
+                    <v-col cols="12" md="12">
+                      <v-textarea v-model="residente.observaciones" label="Observaciones" type="text" solo required>
+                      </v-textarea>
+                    </v-col>
+
+
+                  </v-row>
+                </v-container>
+            </v-card-text>
+            <v-card-actions>
+              <v-spacer></v-spacer>
+              <v-btn @click="dialog=false" color="blue-grey" dark>Cancelar</v-btn>
+              <v-btn @click="guardar()" type="submit" color="primary" :disabled="!isValid">Guardar</v-btn>
+            </v-card-actions>
+            </v-form>
+          </v-card>
+        </v-dialog>
+      </v-main>
+    </v-app>
+  </div>
+
+
+  <script src="https://cdn.jsdelivr.net/npm/vue@2.x/dist/vue.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/vuetify/2.5.7/vuetify.min.js"
+    integrity="sha512-BPXn+V2iK/Zu6fOm3WiAdC1pv9uneSxCCFsJHg8Cs3PEq6BGRpWgXL+EkVylCnl8FpJNNNqvY+yTMQRi4JIfZA=="
+    crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/axios/0.21.1/axios.min.js"
+    integrity="sha512-bZS47S7sPOxkjU/4Bt0zrhEtWx0y0CRkhEp8IckzK+ltifIIE9EMIMTuT/mEzoIMewUINruDBIR/jJnbguonqQ=="
+    crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+  <script src="//cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+  <script>
+
+    let url = 'http://localhost:8000/api/residentes/';
+
+    new Vue({
+
+      el: '#app',
+      vuetify: new Vuetify(),
+      data() {
+        return {
+          residentes: [],
+          dialog: false,
+          operacion: '',
+          residente: {
+            id: null,
+            nombre: '',
+            apellido: '',
+            telefono: '',
+            correo: '',
+            edad: '',
+            direccion: '',
+            comida_entregada: '',
+            observaciones: '',
+            isValid: true
+          },
+
+          rules: {
+            required: value => !!value || 'Este campo es requerido.',
+            counter: value => value.length <= 20 || 'Max 20 characters',
+            email: value => {
+              const pattern = /^(([^<>()[\]\\.,;:\s@"]+(\.[^<>()[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/
+              return pattern.test(value) || 'Invalid e-mail.'
+            },
+          },
+          pagination: {
+            'total': 0,
+            'per_page': 0,
+            'current_page': 0,
+            'last_page': 0,
+            'from': 0,
+            'to': 0
+          },
+          search: '',
+
+        }
+      },
+      created() {
+        this.mostrar()
+      },
+      computed: {
+        isActived: function () {
+          return this.pagination.current_page;
+        },
+        pagesNumber: function () {
+          if (!this.pagination.to) {
+            return [];
+          }
+          var from = this.pagination.current_page - this.offset;
+          if (from < 1) {
+            from = 1;
+          }
+          var to = from + (this.offset * 2);
+          if (to >= this.pagination.last_page) {
+            to = this.pagination.last_page;
+          }
+          var pagesArray = [];
+          while (from <= to) {
+            pagesArray.push(from);
+            from++;
+          }
+          return pagesArray;
+        }
+
+      },
+      methods: {
+        //MÉTODOS PARA EL CRUD
+        mostrar: function (page) {
+          axios.get(url + '?page=' + page)
+            .then(response => {
+              this.residentes = response.data.residentes.data;
+              this.pagination = response.data.pagination;
+            })
+        },
+        crear: function () {
+          let parametros = { nombre: this.residente.nombre, apellido: this.residente.apellido, telefono: this.residente.telefono, correo: this.residente.correo, edad: this.residente.edad, direccion: this.residente.direccion, comida_entregada: this.residente.comida_entregada, observaciones: this.residente.observaciones };
+          axios.post(url, parametros)
+            .then(response => {
+              this.mostrar();
+            });
+          this.residente.nombre = "";
+          this.residente.apellido = "";
+          this.residente.telefono = "";
+          this.residente.correo = "";
+          this.residente.edad = "";
+          this.residente.direccion = "";
+          this.residente.comida_entregada = '';
+          this.residente.observaciones = "";
+
+        },
+       
+
+        changePage: function (page) {
+          this.pagination.current_page = page;
+          this.mostrar(page);
+        },
+        editar: function () {
+          let parametros = { nombre: this.residente.nombre, apellido: this.residente.apellido, telefono: this.residente.telefono, correo: this.residente.correo, edad: this.residente.edad, direccion: this.residente.direccion, comida_entregada: this.residente.comida_entregada, observaciones: this.residente.observaciones };
+          console.log(parametros);
+          axios.put(url + this.residente.id, parametros)
+            .then(response => {
+              this.mostrar();
+            })
+            .catch(error => {
+              console.log(error);
+            });
+        },
+        borrar: function (id) {
+          Swal.fire({
+            title: '¿Confirma eliminar el registro?',
+            confirmButtonText: `Confirmar`,
+            showCancelButton: true,
+          }).then((result) => {
+            if (result.isConfirmed) {
+              //procedimiento borrar
+              axios.delete(url + id)
+                .then(response => {
+                  this.mostrar();
+                });
+              Swal.fire('¡Eliminado!', '', 'success')
+            } else if (result.isDenied) {
+            }
+          });
+        },
+
+
+        //Botones y formularios
+        guardar: function () {
+          if (this.operacion == 'crear') {
+            this.crear();
+          }
+          if (this.operacion == 'editar') {
+            this.editar();
+          }
+          this.dialog = false;
+        },
+        formNuevo: function () {
+          this.dialog = true;
+          this.operacion = 'crear';
+          this.residente.nombre = '';
+          this.residente.apellido = '';
+          this.residente.telefono = '';
+          this.residente.correo = '';
+          this.residente.edad = '';
+          this.residente.direccion = '';
+          this.residente.comida_entregada = '';
+          this.residente.observaciones = '';
+
+        },
+        formEditar: function (id, nombre, apellido, telefono, correo, edad, direccion, comida_entregada, observaciones) {
+          //capturamos los datos del registro seleccionado y los mostramos en el formulario
+          this.residente.id = id;
+          this.residente.nombre = nombre;
+          this.residente.apellido = apellido;
+          this.residente.telefono = telefono;
+          this.residente.correo = correo;
+          this.residente.edad = edad;
+          this.residente.direccion = direccion;
+          this.residente.comida_entregada = comida_entregada;
+          this.residente.observaciones = observaciones;
+          this.dialog = true;
+          this.operacion = 'editar';
+        },
+        buscar() {
+          let buscar = this.search;
+          axios.get(url + '?search=' + buscar)
+            .then(response => {
+              this.search = '';
+              this.residentes = response.data.residentes.data;
+              this.pagination = response.data.pagination;
+            })
+        }
+
+      }
+    });
+
+
+  </script>
+</body>
+
+</html>
